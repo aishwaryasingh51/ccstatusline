@@ -2,15 +2,15 @@
 
 An adaptive, theme-aware statusline for [Claude Code](https://claude.ai/code) that shows your current path, git status, active plan, model, context-window usage, and session rate-limit countdown — all in your terminal's own color palette.
 
-![Statusline preview — Rosé Pine Moon theme in Ghostty](https://raw.githubusercontent.com/placeholder/preview.png)
+![Statusline preview — Rosé Pine Moon theme in Ghostty](CC_Statusline.png)
 
 ---
 
 ## What it looks like
 
 ```
- ~/Documents/MyProject
-  main ✓  OpusPlan  Sonnet 4.6 󰍛 16% | Week: 11% | Sess: 25% (4h33m)
+ ~/Documents/CC_Statusline
+  main ✓  OpusPlan  Sonnet 4.6 󰍛 12% | Week: 21% | Sess: 59% (2h32m)
  ▶▶ accept edits on  (shift+tab to cycle) · ← for agents
 ```
 
