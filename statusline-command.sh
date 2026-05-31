@@ -42,7 +42,8 @@ if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
       (( _modified ))  && flags+="!"
       (( _untracked )) && flags+="?"
     fi
-    git_info="  ${branch}${flags}"
+    [[ -z "$flags" ]] && flags=" "$'\xef\x80\x8c'
+    git_info=$'\xef\x82\x9b'" ${branch}${flags}"
   fi
 fi
 
