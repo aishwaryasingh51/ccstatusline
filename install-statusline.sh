@@ -326,27 +326,20 @@ if (( n > 4 )); then
   short_cwd=".../${_p[n-4]}/${_p[n-3]}/${_p[n-2]}/${_p[n-1]}"
 fi
 
-# Git status
-git_info=""
+# Git status — branch and flags stored separately so the build block can color each flag
+_git_branch=""; _git_staged=0; _git_modified=0; _git_untracked=0
 if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
-  branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null \
+  _git_branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null \
     || git -C "$cwd" rev-parse --short HEAD 2>/dev/null)
-  if [[ -n "$branch" ]]; then
+  if [[ -n "$_git_branch" ]]; then
     gs=$(git -C "$cwd" --no-optional-locks status --porcelain 2>/dev/null)
-    flags=""
     if [[ -n "$gs" ]]; then
-      _staged=0; _modified=0; _untracked=0
       while IFS= read -r ln; do
-        case "${ln:0:1}" in [MADRCU]) _staged=1 ;; esac
-        [[ "${ln:1:1}" == M ]] && _modified=1
-        [[ "${ln:0:2}" == "??" ]] && _untracked=1
+        case "${ln:0:1}" in [MADRCU]) _git_staged=1 ;; esac
+        [[ "${ln:1:1}" == M ]] && _git_modified=1
+        [[ "${ln:0:2}" == "??" ]] && _git_untracked=1
       done <<<"$gs"
-      (( _staged ))    && flags+="+"
-      (( _modified ))  && flags+="!"
-      (( _untracked )) && flags+="?"
     fi
-    [[ -z "$flags" ]] && flags=" "$'\xef\x80\x8c'
-    git_info=$'\xef\x82\x9b'" ${branch}${flags}"
   fi
 fi
 
@@ -583,7 +576,17 @@ read -r _icon < "$HOME/.claude/.distro-icon" 2>/dev/null
 line1="${C_IRIS}${_icon}${_RST} ${C_TEXT}${short_cwd}${_RST}"
 
 line2=""
-[[ -n "$git_info" ]]  && line2+="${C_GOLD}${git_info}${_RST}"
+if [[ -n "$_git_branch" ]]; then
+  _gh_icon=$'\xef\x82\x9b'; _tick=$'\xef\x80\x8c'
+  line2+="${C_GOLD}${_gh_icon} ${_git_branch}${_RST}"
+  if (( ! _git_staged && ! _git_modified && ! _git_untracked )); then
+    line2+=" ${_G1}${_tick}${_RST}"
+  else
+    (( _git_staged ))    && line2+="${C_ROSE}+${_RST}"
+    (( _git_modified ))  && line2+="${C_GOLD}!${_RST}"
+    (( _git_untracked )) && line2+="${C_MUTED}?${_RST}"
+  fi
+fi
 [[ -n "$plan" ]]      && line2+="  ${C_ROSE}${plan}${_RST}"
 [[ -n "$model" ]]     && line2+="  ${C_IRIS}${model}${_RST}"
 if [[ -n "$used" ]]; then
