@@ -5,7 +5,7 @@ input=$(cat)
 IFS=$'\x1f' read -r cwd model used week five five_reset < <(
   jq -r '[.workspace.current_dir // .cwd,
           .model.display_name // "",
-          (.context_window.used_percentage | numbers | tostring) // "",
+          ((.context_window.used_percentage | numbers) // (if ((.context_window.context_window_size // 0) > 0) then (((.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)) * 100 / .context_window.context_window_size | round) else null end) | numbers | tostring) // "",
           (.rate_limits.seven_day.used_percentage | numbers | tostring) // "",
           (.rate_limits.five_hour.used_percentage | numbers | tostring) // "",
           (.rate_limits.five_hour.resets_at | numbers | tostring) // ""] | join("")' <<<"$input"
