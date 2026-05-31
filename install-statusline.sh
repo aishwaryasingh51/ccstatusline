@@ -582,6 +582,7 @@ if [[ -n "$_git_branch" ]]; then
   if (( ! _git_staged && ! _git_modified && ! _git_untracked )); then
     line2+=" ${_G1}${_tick}${_RST}"
   else
+    line2+=" "
     (( _git_staged ))    && line2+="${C_ROSE}+${_RST}"
     (( _git_modified ))  && line2+="${C_GOLD}!${_RST}"
     (( _git_untracked )) && line2+="${C_MUTED}?${_RST}"
