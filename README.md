@@ -10,12 +10,12 @@ An adaptive, theme-aware statusline for [Claude Code](https://claude.ai/code) th
 
 ```
  ~/Documents/MyProject
-  OpusPlan  Sonnet 4.6 󰍛 16% | Week: 11% | Sess: 25% (4h33m)
+  main ✓  OpusPlan  Sonnet 4.6 󰍛 16% | Week: 11% | Sess: 25% (4h33m)
  ▶▶ accept edits on  (shift+tab to cycle) · ← for agents
 ```
 
 - **Line 1** — distro/OS icon + full path (home shown as  icon)
-- **Line 2** — plan badge · model · context % · weekly rate-limit · session rate-limit with countdown
+- **Line 2** — git status · plan badge · model · context % · weekly rate-limit · session rate-limit with countdown
 - **Line 3** — Claude Code's own mode indicator (always automatic)
 
 Colors are sourced live from your terminal emulator or wallpaper tool — no hardcoded palette.
@@ -86,7 +86,11 @@ After install, open a new Claude Code session — the statusline appears immedia
 |---|---|---|
 | Distro icon | `~/.claude/.distro-icon` | Written at install time |
 |  Home icon | Replaces `$HOME` prefix in path | U+F015 nf-fa-home |
-| Git branch + flags | `git status --porcelain` | `+` staged · `!` modified · `?` untracked |
+|  Git branch | `git status --porcelain` | GitHub icon (U+F09B) + branch name, gold |
+| ` ✓` clean | — | Green tick when working tree is clean |
+| ` +` staged | — | Rose/pink |
+| ` !` modified | — | Gold |
+| ` ?` untracked | — | Muted |
 | Plan badge | `~/.claude/settings.json` `.model` | Shown in rose/pink |
 | Model name | Claude Code JSON input | Shown in iris/purple |
 | `󰍛 N%` | `context_window.used_percentage` | Context window used |
@@ -109,11 +113,13 @@ printf '%s' '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Cl
 ```bash
 INSTALLER=~/Documents/CC_Statusline/install-statusline.sh
 STATUSLINE=~/Documents/CC_Statusline/statusline-command.sh
-head -303 "$INSTALLER" > /tmp/i.sh
+OPEN=$(grep -n "<<'STATUSEOF'" "$INSTALLER" | cut -d: -f1)
+CLOSE=$(grep -n "^STATUSEOF$" "$INSTALLER" | cut -d: -f1)
+head -"$OPEN" "$INSTALLER" > /tmp/i.sh
 cat "$STATUSLINE" >> /tmp/i.sh
-tail -n +607 "$INSTALLER" >> /tmp/i.sh
+tail -n +"$CLOSE" "$INSTALLER" >> /tmp/i.sh
 mv /tmp/i.sh "$INSTALLER" && chmod +x "$INSTALLER"
-diff <(sed -n '304,606p' "$INSTALLER") "$STATUSLINE"   # expect empty
+diff <(sed -n "$((OPEN+1)),$((CLOSE-1))p" "$INSTALLER") "$STATUSLINE"  # expect empty
 ```
 
 See `CLAUDE.md` for the full developer guide including gotchas, palette mapping tables, and performance notes.

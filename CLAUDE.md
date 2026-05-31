@@ -3,7 +3,7 @@
 This project provides an adaptive statusline for Claude Code and an installer that sets it up on any machine. The **installer** (`install-statusline.sh`) detects the distro, installs the JetBrainsMono Nerd Font, configures the terminal font, writes the statusline to `~/.claude/statusline-command.sh`, and patches `~/.claude/settings.json` to register it. The **statusline** (`statusline-command.sh`) runs on every Claude Code prompt render — it reads live theme colors from the user's wallpaper tool (Noctalia, Matugen, Wallust, pywal, or Omarchy), and outputs **two lines**:
 
 - **Line 1:** distro icon + path (owns the full terminal width)
-- **Line 2:** git branch + flags, plan badge, model name, context-window usage (`󰍛 N%`), weekly rate-limit (`Week: N%`), session rate-limit with countdown (`Sess: N% (Xh Ym)`)
+- **Line 2:** git status (GitHub icon + branch + colour-coded flags), plan badge, model name, context-window usage (`󰍛 N%`), weekly rate-limit (`Week: N%`), session rate-limit with countdown (`Sess: N% (Xh Ym)`)
 
 Claude Code appends its own mode indicator (`accept edits on`, plan mode, etc.) as a third line automatically.
 
@@ -25,15 +25,17 @@ Claude Code appends its own mode indicator (`accept edits on`, plan mode, etc.) 
 ```bash
 INSTALLER=~/Documents/CC_Statusline/install-statusline.sh
 STATUSLINE=~/Documents/CC_Statusline/statusline-command.sh
-grep -n "STATUSEOF" "$INSTALLER"          # find heredoc boundary line numbers
-head -N "$INSTALLER" > /tmp/i.sh          # N = line containing <<'STATUSEOF' (inclusive)
-cat "$STATUSLINE" >> /tmp/i.sh            # paste statusline body
-tail -n +M "$INSTALLER" >> /tmp/i.sh      # M = line containing closing STATUSEOF (inclusive)
+OPEN=$(grep -n "<<'STATUSEOF'" "$INSTALLER" | cut -d: -f1)
+CLOSE=$(grep -n "^STATUSEOF$" "$INSTALLER" | cut -d: -f1)
+head -"$OPEN" "$INSTALLER" > /tmp/i.sh
+cat "$STATUSLINE" >> /tmp/i.sh
+tail -n +"$CLOSE" "$INSTALLER" >> /tmp/i.sh
 mv /tmp/i.sh "$INSTALLER" && chmod +x "$INSTALLER"
 ```
 
-Then copy the updated statusline to the live location:
+Verify and deploy:
 ```bash
+diff <(sed -n "$((OPEN+1)),$((CLOSE-1))p" "$INSTALLER") "$STATUSLINE"  # expect empty
 cp "$STATUSLINE" ~/.claude/statusline-command.sh
 ```
 
@@ -96,6 +98,19 @@ Terminal emulators render Nerd Font PUA glyphs at reduced size when a non-space 
 ```
 
 The distro icon (`_icon`) is unaffected because it already has a hard-coded space after it in the `line1` construction.
+
+### Git status — branch/flags are built in two stages
+
+The git section (runs before palette detection) stores `_git_branch`, `_git_staged`, `_git_modified`, `_git_untracked` as separate variables. The build block (after palette detection) assembles the coloured git segment using those, so each flag can get its own colour:
+
+| Symbol | Colour variable | Meaning |
+|---|---|---|
+| `✓` (U+F00C) | `_G1` (gradient green) | Working tree clean |
+| `+` | `C_ROSE` | Staged changes |
+| `!` | `C_GOLD` | Unstaged modifications |
+| `?` | `C_MUTED` | Untracked files |
+
+GitHub icon is `nf-fa-github` U+F09B (`$'\xef\x82\x9b'`), always gold. A single space separates the branch name from the flag(s).
 
 ### Banner box alignment
 The banner uses Unicode box-drawing chars (`╭╮╰╯│─`). All inner rows must have exactly `IW + 2` visible characters between the two `│` borders. ANSI escape sequences (`\033[…m`) are invisible but count toward string length in `printf "%-*s"` — you must subtract them manually when computing the padding width. If the title line looks broken on the right, the padding formula `$((IW - N))` has the wrong `N`.
