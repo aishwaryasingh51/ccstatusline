@@ -1,38 +1,18 @@
 # ClaudeCode Statusline
 
-An adaptive, theme-aware statusline for [Claude Code](https://claude.ai/code) that shows your current path, git status, active plan, model, context-window usage, and session rate-limit countdown — all in your terminal's own color palette.
+An adaptive, theme-aware statusline for [Claude Code](https://claude.ai/code). Colors are pulled live from your terminal emulator or wallpaper tool — no hardcoded palette.
 
 ---
 
-## What it looks like
+## Preview
 
-![Statusline preview — Rosé Pine Moon theme in Ghostty](CC_Statusline.png)
+![Statusline — Rosé Pine Moon / Ghostty](CC_Statusline.png)
 
-- **Line 1** — distro/OS icon + full path (home shown as  icon)
-- **Line 2** — git status · plan badge · model · context % · weekly rate-limit · session rate-limit with countdown
-- **Line 3** — Claude Code's own mode indicator (always automatic)
-
-Colors are sourced live from your terminal emulator or wallpaper tool — no hardcoded palette.
-
----
-
-## Features
-
-- **macOS:** reads Ghostty, Alacritty, or iTerm2 config for the active theme's exact hex colors
-- **Linux:** reads Noctalia, Matugen, Wallust, pywal, or Omarchy for Material You / pywal palettes
-- **ANSI fallback** when no config is found — works everywhere
-- **Nerd Font gradient** on usage percentages: green → gold → red as limits approach
-- **Distro icon** auto-detected at install time (macOS, Arch, Ubuntu, Fedora, Debian, Manjaro, EndeavourOS, Mint, Omarchy)
-- **Zero fork hot path** — `$EPOCHSECONDS`, `printf -v`, bash builtins; ~18–28ms render time
-
----
-
-## Requirements
-
-- [Claude Code](https://claude.ai/code) CLI
-- A [Nerd Font](https://www.nerdfonts.com/) (installer offers to set up JetBrainsMono Nerd Font automatically)
-- `jq` (used for JSON parsing)
-- bash 5+ (macOS ships bash 3; installer will warn — install via `brew install bash`)
+| Line | Content |
+|---|---|
+| 1 | Distro icon · path (home shown as  icon) |
+| 2 | Git status · plan · model · context % · week % · session % + countdown |
+| 3 | Claude Code mode indicator (automatic) |
 
 ---
 
@@ -42,73 +22,87 @@ Colors are sourced live from your terminal emulator or wallpaper tool — no har
 bash install-statusline.sh
 ```
 
-The installer will:
-1. Detect your OS and terminal emulator
-2. Offer to install JetBrainsMono Nerd Font and configure your terminal font
-3. Write `~/.claude/statusline-command.sh`
-4. Patch `~/.claude/settings.json` to register it
+The installer detects your OS and terminal, optionally sets up JetBrainsMono Nerd Font, writes `~/.claude/statusline-command.sh`, and registers it in `~/.claude/settings.json`.
 
-**Non-interactive (accept all defaults):**
 ```bash
-bash install-statusline.sh -y
+bash install-statusline.sh -y   # non-interactive
 ```
 
-After install, open a new Claude Code session — the statusline appears immediately.
+Open a new Claude Code session — the statusline appears immediately.
 
 ---
 
-## Supported terminals / color sources
+## Requirements
 
-| Platform | Source | Notes |
+| | |
+|---|---|
+| [Claude Code](https://claude.ai/code) | CLI |
+| [Nerd Font](https://www.nerdfonts.com/) | JetBrainsMono NF offered automatically by installer |
+| `jq` | JSON parsing |
+| bash 5+ | macOS ships bash 3 — `brew install bash` if needed |
+
+---
+
+## Color sources
+
+Colors are probed in order; first match wins.
+
+**macOS**
+| Terminal | Source |
+|---|---|
+| Ghostty | `~/.config/ghostty/config` — theme file + inline overrides |
+| Alacritty | `~/.config/alacritty/alacritty.toml` |
+| iTerm2 | `~/Library/Preferences/com.googlecode.iterm2.plist` |
+| Terminal.app | ANSI fallback (color data not accessible from bash) |
+
+**Linux**
+| Tool | Source |
+|---|---|
+| Noctalia / Matugen | `colors.json` — Material You palette |
+| Wallust / pywal | `colors.json` — 16-color pywal palette |
+| Omarchy | `current/theme/alacritty.toml` |
+
+Falls back to standard ANSI colors on any unrecognised setup.
+
+---
+
+## Statusline segments
+
+| Segment | Color | Notes |
 |---|---|---|
-| macOS | Ghostty `~/.config/ghostty/config` | Theme file + inline overrides, one awk pass |
-| macOS | Alacritty `~/.config/alacritty/alacritty.toml` | TOML parser |
-| macOS | iTerm2 `~/Library/Preferences/com.googlecode.iterm2.plist` | `plutil` + `jq` |
-| macOS | Terminal.app | Falls through to ANSI (NSColor blobs require a binary decoder) |
-| Linux | Noctalia `~/.config/noctalia/colors.json` | Material You |
-| Linux | Matugen `~/.config/matugen/colors.json` | Material You |
-| Linux | Wallust `~/.cache/wallust/colors.json` | pywal-compatible |
-| Linux | pywal `~/.cache/wal/colors.json` | 16-color |
-| Linux | Omarchy `~/.config/omarchy/current/theme/alacritty.toml` | |
-| Any | ANSI fallback | Used when no config is found |
+| Distro / OS icon |  Iris | Written to `~/.claude/.distro-icon` at install time |
+|  Path |  Text | `$HOME` replaced with  icon |
+|  Branch |  Gold | GitHub icon + branch name |
+| ` ✓` clean |  Green | Working tree has no changes |
+| ` +` staged |  Rose | |
+| ` !` modified |  Gold | |
+| ` ?` untracked |  Muted | |
+| Plan badge |  Rose | Read from `~/.claude/settings.json` |
+| Model name |  Iris | |
+| `󰍛 N%` |  Gradient | Context window used — appears after first message exchange |
+| `Week: N%` |  Gradient | 7-day rolling rate limit |
+| `Sess: N% (Xh Ym)` |  Gradient | 5-hour session usage + time until reset |
+
+Usage percentages use a smooth green → gold → red gradient as limits approach.
 
 ---
 
-## Statusline fields
+## Development
 
-| Segment | Source | Notes |
-|---|---|---|
-| Distro icon | `~/.claude/.distro-icon` | Written at install time |
-|  Home icon | Replaces `$HOME` prefix in path | U+F015 nf-fa-home |
-|  Git branch | `git status --porcelain` | GitHub icon (U+F09B) + branch name, gold |
-| ` ✓` clean | — | Green tick when working tree is clean |
-| ` +` staged | — | Rose/pink |
-| ` !` modified | — | Gold |
-| ` ?` untracked | — | Muted |
-| Plan badge | `~/.claude/settings.json` `.model` | Shown in rose/pink |
-| Model name | Claude Code JSON input | Shown in iris/purple |
-| `󰍛 N%` | `context_window.used_percentage` | Context window used |
-| `Week: N%` | `rate_limits.seven_day.used_percentage` | 7-day rolling usage |
-| `Sess: N% (Xh Ym)` | `rate_limits.five_hour.*` | 5-hour session usage + countdown to reset |
-
----
-
-## Manual update / development
-
-The working copy is `statusline-command.sh`. The installer embeds the entire statusline inside a heredoc at lines 303–606 — both must always match (see `CLAUDE.md`).
+The working copy is `statusline-command.sh`. `install-statusline.sh` embeds it verbatim in a `<<'STATUSEOF'` heredoc — both must always match.
 
 **Test render:**
 ```bash
-printf '%s' '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Claude Sonnet 4.6"},"context_window":{"used_percentage":10},"rate_limits":{"seven_day":{"used_percentage":20},"five_hour":{"used_percentage":5,"resets_at":'"$(( $(date +%s) + 14400 ))"'}}}' \
+printf '%s' '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Sonnet 4.6"},"context_window":{"used_percentage":10},"rate_limits":{"seven_day":{"used_percentage":20},"five_hour":{"used_percentage":5,"resets_at":'"$(( $(date +%s) + 14400 ))"'}}}' \
   | bash statusline-command.sh
 ```
 
-**Re-sync after editing `statusline-command.sh`:**
+**Re-sync heredoc after editing:**
 ```bash
-INSTALLER=~/Documents/CC_Statusline/install-statusline.sh
-STATUSLINE=~/Documents/CC_Statusline/statusline-command.sh
+INSTALLER=install-statusline.sh
+STATUSLINE=statusline-command.sh
 OPEN=$(grep -n "<<'STATUSEOF'" "$INSTALLER" | cut -d: -f1)
-CLOSE=$(grep -n "^STATUSEOF$" "$INSTALLER" | cut -d: -f1)
+CLOSE=$(grep -n "^STATUSEOF$"   "$INSTALLER" | cut -d: -f1)
 head -"$OPEN" "$INSTALLER" > /tmp/i.sh
 cat "$STATUSLINE" >> /tmp/i.sh
 tail -n +"$CLOSE" "$INSTALLER" >> /tmp/i.sh
@@ -116,7 +110,7 @@ mv /tmp/i.sh "$INSTALLER" && chmod +x "$INSTALLER"
 diff <(sed -n "$((OPEN+1)),$((CLOSE-1))p" "$INSTALLER") "$STATUSLINE"  # expect empty
 ```
 
-See `CLAUDE.md` for the full developer guide including gotchas, palette mapping tables, and performance notes.
+See [`CLAUDE.md`](CLAUDE.md) for the full developer guide: palette mapping, gotchas, and performance notes.
 
 ---
 
