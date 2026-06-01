@@ -600,20 +600,24 @@ read -r _icon < "$HOME/.claude/.distro-icon" 2>/dev/null
 line1="${C_IRIS}${_icon}${_RST} ${C_TEXT}${short_cwd}${_RST}"
 
 line2=""
+_sep=""
 if [[ -n "$_git_branch" ]]; then
   _gh_icon=$'\xef\x82\x9b'; _tick=$'\xef\x80\x8c'
   line2+="${C_GOLD}${_gh_icon} ${_git_branch}${_RST}"
   if (( ! _git_staged && ! _git_modified && ! _git_untracked )); then
-    line2+=" ${_G1}${_tick}${_RST}"
+    line2+="${_G1}${_tick}${_RST}"
   else
-    line2+=" "
     (( _git_staged ))    && line2+="${C_ROSE}+${_RST}"
     (( _git_modified ))  && line2+="${C_GOLD}!${_RST}"
-    (( _git_untracked )) && line2+="${C_MUTED}?${_RST}"
+    (( _git_untracked )) && line2+="${C_GOLD}?${_RST}"
   fi
+  _sep=" "
 fi
-[[ -n "$plan" ]]      && line2+="  ${C_ROSE}${plan}${_RST}"
-[[ -n "$model" ]]     && line2+="  ${C_IRIS}${model}${_RST}"
+if [[ -n "$plan" ]]; then
+  line2+="${_sep}${C_ROSE}${plan}${_RST}"
+  _sep=" "
+fi
+[[ -n "$model" ]] && line2+="${_sep}${C_IRIS}${model}${_RST}"
 if [[ -n "$used" ]]; then
   u_int=$(printf '%.0f' "$used")
   if [[ -n "$tok" && -n "$ctxmax" && "$ctxmax" != "0" ]]; then
