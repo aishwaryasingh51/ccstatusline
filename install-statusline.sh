@@ -308,10 +308,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 input=$(cat)
 
 # Parse all input fields in one jq call (\x1f delimiter — see CLAUDE.md gotcha)
-IFS=$'\x1f' read -r cwd model used week five five_reset < <(
+IFS=$'\x1f' read -r cwd model used tok ctxmax week five five_reset < <(
   jq -r '[.workspace.current_dir // .cwd,
           .model.display_name // "",
           ((.context_window.used_percentage | numbers) // (if ((.context_window.context_window_size // 0) > 0 and ((.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)) > 0) then (((.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)) * 100 / .context_window.context_window_size | round) else null end) | numbers | tostring) // "",
+          (.context_window.total_input_tokens | numbers | tostring) // "",
+          (.context_window.context_window_size | numbers | tostring) // "",
           (.rate_limits.seven_day.used_percentage | numbers | tostring) // "",
           (.rate_limits.five_hour.used_percentage | numbers | tostring) // "",
           (.rate_limits.five_hour.resets_at | numbers | tostring) // ""] | join("")' <<<"$input"
@@ -578,6 +580,17 @@ grad_rem() {
   fi
 }
 
+# Format a token integer as compact kilo notation; result in $_FMTK
+# e.g. 16600->16.6k  200000->200k  940->940  (no subshell — hot path safe)
+fmtk() {
+  local n=$1 d
+  if (( n >= 1000 )); then
+    d=$(( (n % 1000) / 100 ))
+    if (( d == 0 )); then printf -v _FMTK '%dk' $(( n / 1000 ))
+    else printf -v _FMTK '%d.%dk' $(( n / 1000 )) "$d"; fi
+  else printf -v _FMTK '%d' "$n"; fi
+}
+
 # ── Build lines ───────────────────────────────────────────────────────────────
 # Line 1: distro icon + path — owns the full terminal width
 # Line 2: git info, plan, model, usage metrics
@@ -603,7 +616,13 @@ fi
 [[ -n "$model" ]]     && line2+="  ${C_IRIS}${model}${_RST}"
 if [[ -n "$used" ]]; then
   u_int=$(printf '%.0f' "$used")
-  line2+=" ${C_MUTED}󰍛 $(grad "$u_int")${u_int}%${_RST} ${C_MUTED}|${_RST}"
+  if [[ -n "$tok" && -n "$ctxmax" && "$ctxmax" != "0" ]]; then
+    fmtk "$tok";    tok_s=$_FMTK
+    fmtk "$ctxmax"; max_s=$_FMTK
+    line2+=" ${C_MUTED}󰍛 $(grad "$u_int")${u_int}%${_RST}${C_MUTED} ($(grad "$u_int")${tok_s}${_RST}${C_MUTED}/${max_s})${_RST} ${C_MUTED}|${_RST}"
+  else
+    line2+=" ${C_MUTED}󰍛 $(grad "$u_int")${u_int}%${_RST} ${C_MUTED}|${_RST}"
+  fi
 fi
 w_src="${week:-$used}"
 if [[ -n "$w_src" ]]; then

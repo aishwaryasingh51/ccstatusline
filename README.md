@@ -6,12 +6,12 @@ An adaptive, theme-aware statusline for [Claude Code](https://claude.ai/code). C
 
 ## Preview
 
-![Statusline — Rosé Pine Moon / Ghostty](CC_Statusline.png)
+![Statusline v1.2 — Rosé Pine Moon / Ghostty](ccstatusline_v1_2.png)
 
 | Line | Content |
 |---|---|
 | 1 | Distro icon · path (home shown as  icon) |
-| 2 | Git status · plan · model · context % · week % · session % + countdown |
+| 2 | Git status · plan · model · context % (tokens/max) · week % · session % + countdown |
 | 3 | Claude Code mode indicator (automatic) |
 
 ---
@@ -79,7 +79,7 @@ Falls back to standard ANSI colors on any unrecognised setup.
 | ` ?` untracked |  Muted | |
 | Plan badge |  Rose | Read from `~/.claude/settings.json` |
 | Model name |  Iris | |
-| `󰍛 N%` |  Gradient | Context window used — appears after first message exchange |
+| `󰍛 N% (Xk/Yk)` |  Gradient | Context window used with raw token count — appears after first message exchange |
 | `Week: N%` |  Gradient | 7-day rolling rate limit |
 | `Sess: N% (Xh Ym)` |  Gradient | 5-hour session usage + time until reset |
 
@@ -111,6 +111,24 @@ diff <(sed -n "$((OPEN+1)),$((CLOSE-1))p" "$INSTALLER") "$STATUSLINE"  # expect 
 ```
 
 See [`CLAUDE.md`](CLAUDE.md) for the full developer guide: palette mapping, gotchas, and performance notes.
+
+---
+
+## Changelog
+
+### v1.2
+- Context segment now shows raw token count alongside the percentage: `󰍛 12% (24.2k/200k)`. The used-token count shares the same gradient color as the percentage; the denominator stays muted. Falls back to percent-only before the first API response or after `/compact`.
+
+### v1.1
+- Fixed timestamp rendering bug (`Sess: 1780267200%`) caused by `IFS=$'\t'` collapsing empty TSV fields — switched to `\x1f` Unit Separator delimiter
+- Added hex validation and sync helper for backup operations
+- Bash 3.2 compatibility fix for backup clobbering
+
+### v1.0
+- Initial release: adaptive two-line statusline with distro icon, git status, plan badge, model name, context %, week %, and session % with countdown
+- macOS: Ghostty, Alacritty, iTerm2 palette detection
+- Linux: Noctalia, Matugen, Wallust, pywal, Omarchy palette detection
+- Smooth RGB gradient across all usage meters
 
 ---
 
