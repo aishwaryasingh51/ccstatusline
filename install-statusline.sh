@@ -299,7 +299,10 @@ fi
 _confirm "$_q"
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-  [[ -f "$SCRIPT_PATH" ]] && cp "$SCRIPT_PATH" "$SCRIPT_PATH.bak.$EPOCHSECONDS"
+  if [[ -f "$SCRIPT_PATH" ]]; then
+    cp "$SCRIPT_PATH" "$SCRIPT_PATH.bak.${EPOCHSECONDS:-$(date +%s)}"
+    ls -1t "$SCRIPT_PATH".bak.* 2>/dev/null | tail -n +4 | while IFS= read -r f; do rm -f -- "$f"; done
+  fi
   cat > "$SCRIPT_PATH" <<'STATUSEOF'
 #!/usr/bin/env bash
 input=$(cat)
@@ -536,6 +539,14 @@ else
   fi
 fi
 
+# Sanity-check gradient hex values: if any is non-empty but not 6 valid hex chars,
+# blank all four so grad/grad_rem fall back to the discrete ANSI-band path cleanly.
+for _h in "$_G1h" "$_G2h" "$_G3h" "$_G4h"; do
+  if [[ -n "$_h" && ! "${_h#\#}" =~ ^[0-9a-fA-F]{6}$ ]]; then
+    _G1h=""; _G2h=""; _G3h=""; _G4h=""; break
+  fi
+done
+
 grad() {
   local p=$1
   if [[ -z "$_G1h" ]]; then
@@ -618,17 +629,20 @@ STATUSEOF
     [[ -f "$SET_FILE" ]] || echo '{}' > "$SET_FILE"
     if jq '. + {"statusLine":{"type":"command","command":"bash ~/.claude/statusline-command.sh"}}' \
          "$SET_FILE" > "$SET_FILE.tmp"; then
-      cp "$SET_FILE" "$SET_FILE.bak.$EPOCHSECONDS"
+      cp "$SET_FILE" "$SET_FILE.bak.${EPOCHSECONDS:-$(date +%s)}"
+      ls -1t "$SET_FILE".bak.* 2>/dev/null | tail -n +4 | while IFS= read -r f; do rm -f -- "$f"; done
       mv "$SET_FILE.tmp" "$SET_FILE"
       printf "\n  ${CI}✓ Statusline installed!${RST}\n"
 
-      _confirm "$(printf "\n${CI}→${RST} Start Claude Code now? (y/N) ")"
-      if [[ $REPLY =~ ^[Yy]$ ]]; then
-        if command -v claude >/dev/null 2>&1; then
-          cd "$HOME" || exit
-          exec claude
-        else
-          printf "  ${CM}'claude' not in PATH — install Claude Code, then run \`claude\`.${RST}\n"
+      if ! $ASSUME_YES; then
+        _confirm "$(printf "\n${CI}→${RST} Start Claude Code now? (y/N) ")"
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+          if command -v claude >/dev/null 2>&1; then
+            cd "$HOME" || exit
+            exec claude
+          else
+            printf "  ${CM}'claude' not in PATH — install Claude Code, then run \`claude\`.${RST}\n"
+          fi
         fi
       fi
     else

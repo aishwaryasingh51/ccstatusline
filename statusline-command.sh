@@ -233,6 +233,14 @@ else
   fi
 fi
 
+# Sanity-check gradient hex values: if any is non-empty but not 6 valid hex chars,
+# blank all four so grad/grad_rem fall back to the discrete ANSI-band path cleanly.
+for _h in "$_G1h" "$_G2h" "$_G3h" "$_G4h"; do
+  if [[ -n "$_h" && ! "${_h#\#}" =~ ^[0-9a-fA-F]{6}$ ]]; then
+    _G1h=""; _G2h=""; _G3h=""; _G4h=""; break
+  fi
+done
+
 grad() {
   local p=$1
   if [[ -z "$_G1h" ]]; then
