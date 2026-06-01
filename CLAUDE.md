@@ -23,8 +23,8 @@ Claude Code appends its own mode indicator (`accept edits on`, plan mode, etc.) 
 `install-statusline.sh` contains the entire statusline body verbatim inside a `<<'STATUSEOF'` heredoc. **The heredoc copy must always match the working/installed statusline.** Whenever `statusline-command.sh` is edited, re-splice it back into the installer:
 
 ```bash
-INSTALLER=~/Documents/CC_Statusline/install-statusline.sh
-STATUSLINE=~/Documents/CC_Statusline/statusline-command.sh
+INSTALLER=~/Documents/ccstatusline/install-statusline.sh
+STATUSLINE=~/Documents/ccstatusline/statusline-command.sh
 OPEN=$(grep -n "<<'STATUSEOF'" "$INSTALLER" | cut -d: -f1)
 CLOSE=$(grep -n "^STATUSEOF$" "$INSTALLER" | cut -d: -f1)
 head -"$OPEN" "$INSTALLER" > /tmp/i.sh
@@ -223,14 +223,14 @@ Arch-derivative distros without their own font-logos glyph fall back to U+F303 (
 
 **Statusline render (outputs two lines):**
 ```bash
-cd ~/Documents/CC_Statusline
+cd ~/Documents/ccstatusline
 printf '%s' '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Claude"}}' \
   | bash statusline-command.sh
 ```
 
 **Test the timestamp bug fix — all three shapes must be clean (no `<timestamp>%`):**
 ```bash
-cd ~/Documents/CC_Statusline
+cd ~/Documents/ccstatusline
 # five=0 → "Sess: 0% (Xh Ym)"
 printf '%s' '{"workspace":{"current_dir":"$HOME"},"model":{"display_name":"Sonnet 4.6"},"context_window":{"used_percentage":16},"rate_limits":{"seven_day":{"used_percentage":10},"five_hour":{"used_percentage":0,"resets_at":'"$(( $(date +%s) + 16800 ))"'}}}' | bash statusline-command.sh
 # five=null → Sess segment absent, Week still shows
@@ -241,7 +241,7 @@ printf '%s' '{"workspace":{"current_dir":"$HOME"},"model":{"display_name":"Sonne
 
 **Verify macOS Ghostty palette is picked up (expect RGB values matching your theme, not ANSI codes):**
 ```bash
-cd ~/Documents/CC_Statusline
+cd ~/Documents/ccstatusline
 printf '%s' '{"workspace":{"current_dir":"'"$HOME"'"},"model":{"display_name":"Opus 4.8"},"context_window":{"used_percentage":4},"rate_limits":{"seven_day":{"used_percentage":48},"five_hour":{"used_percentage":5,"resets_at":'"$(( $(date +%s) + 16800 ))"'}}}' \
   | bash statusline-command.sh | sed 's/\x1b\[/ESC[/g'
 # Ghostty active: ESC[38;2;...m (RGB values)
