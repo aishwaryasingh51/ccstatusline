@@ -2,7 +2,7 @@
 input=$(cat)
 
 # Parse all input fields in one jq call (\x1f delimiter — see CLAUDE.md gotcha)
-IFS=$'\x1f' read -r cwd model used tok ctxmax week five five_reset < <(
+IFS=$'\x1f' read -r cwd model used tok ctxmax week five five_reset effort < <(
   jq -r '[.workspace.current_dir // .cwd,
           .model.display_name // "",
           ((.context_window.used_percentage | numbers) // (if ((.context_window.context_window_size // 0) > 0 and ((.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)) > 0) then (((.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)) * 100 / .context_window.context_window_size | round) else null end) | numbers | tostring) // "",
@@ -10,7 +10,8 @@ IFS=$'\x1f' read -r cwd model used tok ctxmax week five five_reset < <(
           (.context_window.context_window_size | numbers | tostring) // "",
           (.rate_limits.seven_day.used_percentage | numbers | tostring) // "",
           (.rate_limits.five_hour.used_percentage | numbers | tostring) // "",
-          (.rate_limits.five_hour.resets_at | numbers | tostring) // ""] | join("")' <<<"$input"
+          (.rate_limits.five_hour.resets_at | numbers | tostring) // "",
+          (.effort.level // "")] | join("")' <<<"$input"
 )
 home="$HOME"
 
@@ -285,6 +286,18 @@ fmtk() {
   else printf -v _FMTK '%d' "$n"; fi
 }
 
+# Effort level → display label + gradient position (see docs: ultracode reports as xhigh)
+effort_label=""; effort_pct=55
+case "$effort" in
+  low)    effort_label="Low";    effort_pct=0   ;;
+  medium) effort_label="Medium"; effort_pct=33  ;;
+  high)   effort_label="High";   effort_pct=55  ;;
+  xhigh)  effort_label="Extra";  effort_pct=80  ;;
+  max)    effort_label="Max";    effort_pct=100 ;;
+  "")     ;;                                      # absent — model has no effort param
+  *)      effort_label="$effort" ;;               # unknown future level — show raw
+esac
+
 # ── Build lines ───────────────────────────────────────────────────────────────
 # Line 1: distro icon + path — owns the full terminal width
 # Line 2: git info, plan, model, usage metrics
@@ -311,7 +324,10 @@ if [[ -n "$plan" ]]; then
   line2+="${_sep}${C_ROSE}${plan}${_RST}"
   _sep=" "
 fi
-[[ -n "$model" ]] && line2+="${_sep}${C_IRIS}${model}${_RST}"
+if [[ -n "$model" ]]; then
+  line2+="${_sep}${C_IRIS}${model}${_RST}"
+  [[ -n "$effort_label" ]] && line2+="${C_MUTED} · ${_RST}$(grad "$effort_pct")${effort_label}${_RST}"
+fi
 if [[ -n "$used" ]]; then
   u_int=$(printf '%.0f' "$used")
   if [[ -n "$tok" && -n "$ctxmax" && "$ctxmax" != "0" ]]; then
