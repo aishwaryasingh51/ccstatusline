@@ -13,8 +13,9 @@ Claude Code appends its own mode indicator (`accept edits on`, plan mode, etc.) 
 
 | File | Role |
 |---|---|
-| `install-statusline.sh` | The installer. Patches `~/.claude/settings.json`, installs statusline, configures terminal font, writes `~/.claude/.distro-icon` |
+| `install-statusline.sh` | The installer. Patches `~/.claude/settings.json`, installs statusline, configures terminal font, writes `~/.claude/.distro-icon`, offers the Omarchy Nerd Font patch on Omarchy |
 | `statusline-command.sh` | **Working copy** of the statusline for development. The live copy is at `~/.claude/statusline-command.sh` |
+| `nerdfont-patch/` | `apply.sh` / `patch_font.py` / `validate_font.py` — splices the Omarchy logo glyph into JetBrainsMono Nerd Font at U+FFF00 (table-level `glyf`/`hmtx`/`cmap` edit, validated against the original before install). Only offered by the installer when `$DISTRO == omarchy`; reads `/usr/share/fonts/omarchy/omarchy.ttf` (ships with `omarchy-settings`, MIT) as the glyph source, never redistributes font bytes itself |
 
 ---
 
@@ -206,7 +207,7 @@ All codepoints verified against `ryanoasis/nerd-fonts` `bin/scripts/lib/i_logos.
 | macOS | U+F302 | nf-linux-apple |
 | arch | U+F303 | nf-linux-archlinux |
 | cachyos, archlabs, artix, archcraft, arcolinux | U+F303 | nf-linux-archlinux (no official glyph; arch fallback) |
-| omarchy | U+E900 | omarchy.ttf custom (requires omarchy.ttf) |
+| omarchy | U+FFF00 | Omarchy logo, patched directly into JetBrainsMono Nerd Font by `nerdfont-patch/` (installer offers this step on Omarchy; falls back to the raw omarchy.ttf codepoint U+E900 rendering as tofu if declined — the terminal font has no glyph there until patched) |
 | ubuntu | U+F31B | nf-linux-ubuntu |
 | fedora | U+F30A | nf-linux-fedora |
 | linuxmint | U+F30E | nf-linux-linuxmint |

@@ -22,7 +22,7 @@ An adaptive, theme-aware statusline for [Claude Code](https://claude.ai/code). C
 bash install-statusline.sh
 ```
 
-The installer detects your OS and terminal, optionally sets up JetBrainsMono Nerd Font, writes `~/.claude/statusline-command.sh`, and registers it in `~/.claude/settings.json`.
+The installer detects your OS and terminal, optionally sets up JetBrainsMono Nerd Font, writes `~/.claude/statusline-command.sh`, and registers it in `~/.claude/settings.json`. **On Omarchy**, it also offers to patch the real Omarchy logo directly into JetBrainsMono Nerd Font (see [`nerdfont-patch/`](nerdfont-patch)) so the distro icon renders as the actual logo instead of a generic Linux/Arch glyph.
 
 ```bash
 bash install-statusline.sh -y   # non-interactive
@@ -70,7 +70,7 @@ Falls back to standard ANSI colors on any unrecognised setup.
 
 | Segment | Color | Notes |
 |---|---|---|
-| Distro / OS icon |  Iris | Written to `~/.claude/.distro-icon` at install time |
+| Distro / OS icon |  Iris | Written to `~/.claude/.distro-icon` at install time — the real logo on Omarchy if the font was patched, otherwise a generic distro glyph |
 |  Path |  Text | `$HOME` replaced with  icon |
 |  Branch |  Gold | GitHub icon + branch name |
 | ` ✓` clean |  Green | Working tree has no changes |
@@ -115,6 +115,9 @@ See [`CLAUDE.md`](CLAUDE.md) for the full developer guide: palette mapping, gotc
 ---
 
 ## Changelog
+
+### v1.3
+- Added `nerdfont-patch/` — splices the real Omarchy logo into JetBrainsMono Nerd Font at U+FFF00, validated (`fc-validate` + FreeType rasterization + byte-identical comparison of every untouched glyph) before it ever touches the live font. Installer offers it as a step on Omarchy, replacing the previous placeholder codepoint (U+E900, unrenderable without the font itself loaded) that the distro-icon mapping shipped with but never actually delivered
 
 ### v1.2
 - Context segment now shows raw token count alongside the percentage: `󰍛 12% (24.2k/200k)`. The used-token count shares the same gradient color as the percentage; the denominator stays muted. Falls back to percent-only before the first API response or after `/compact`.

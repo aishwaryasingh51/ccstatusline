@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 RST=$'\033[0m'; BLD=$'\033[1m'
 hex_to_rgb() { local h="${1#\#}"; printf '%d;%d;%d' "0x${h:0:2}" "0x${h:2:2}" "0x${h:4:2}"; }
 tc() { [[ -n "$1" ]] && printf '\033[38;2;%sm' "$(hex_to_rgb "$1")" || printf '\033[97m'; }
@@ -43,7 +45,7 @@ case $DISTRO in
   macos)                                      _glyph=$'\xef\x8c\x82' ;; # nf-linux-apple
   arch)                                       _glyph=$'\xef\x8c\x83' ;; # nf-linux-archlinux
   cachyos|archlabs|artix|archcraft|arcolinux) _glyph=$'\xef\x8c\x83' ;; # arch fallback
-  omarchy)                                    _glyph=$'\xee\xa4\x80' ;; # omarchy.ttf custom
+  omarchy)                                    _glyph=$'\xf3\xbf\xbc\x80' ;; # patched into JetBrainsMono NF at U+FFF00 by nerdfont-patch/
   ubuntu)                                     _glyph=$'\xef\x8c\x9b' ;; # nf-linux-ubuntu
   fedora)                                     _glyph=$'\xef\x8c\x8a' ;; # nf-linux-fedora
   linuxmint)                                  _glyph=$'\xef\x8c\x8e' ;; # nf-linux-linuxmint
@@ -169,7 +171,7 @@ case $DISTRO in
   macos)       _di=$'\xef\x8c\x82'' macOS'       ;;
   arch)        _di=$'\xef\x8c\x83'' Arch Linux'  ;;
   cachyos)     _di=$'\xef\x8c\x83'' CachyOS'     ;;
-  omarchy)     _di=$'\xee\xa4\x80'' Omarchy'     ;;
+  omarchy)     _di=$'\xf3\xbf\xbc\x80'' Omarchy'     ;;
   ubuntu)      _di=$'\xef\x8c\x9b'' Ubuntu'      ;;
   fedora)      _di=$'\xef\x8c\x8a'' Fedora'      ;;
   linuxmint)   _di=$'\xef\x8c\x8e'' Linux Mint'  ;;
@@ -201,15 +203,20 @@ case $DISTRO in
   macos) _pkg="brew" ;;
   *) _pkg="manual" ;;
 esac
-printf "  ${CI}1${RST}  Install JetBrainsMono Nerd Font + jq  ${CM}via %s${RST}\n" "$_pkg"
+_step=1
+printf "  ${CI}%d${RST}  Install JetBrainsMono Nerd Font + jq  ${CM}via %s${RST}\n" "$((_step++))" "$_pkg"
+
+if [[ "$DISTRO" == "omarchy" ]]; then
+  printf "  ${CI}%d${RST}  Patch JetBrainsMono Nerd Font with the Omarchy logo  ${CM}(U+FFF00)${RST}\n" "$((_step++))"
+fi
 
 case $TERM_EMU in
-  ghostty)   printf "  ${CI}2${RST}  Configure Ghostty font  ${CM}(theme untouched)${RST}\n" ;;
-  alacritty) printf "  ${CI}2${RST}  Configure Alacritty font  ${CM}(theme untouched)${RST}\n" ;;
-  *) printf "  ${CI}2${RST}  ${CM}Terminal font auto-config not supported — set manually${RST}\n" ;;
+  ghostty)   printf "  ${CI}%d${RST}  Configure Ghostty font  ${CM}(theme untouched)${RST}\n" "$((_step++))" ;;
+  alacritty) printf "  ${CI}%d${RST}  Configure Alacritty font  ${CM}(theme untouched)${RST}\n" "$((_step++))" ;;
+  *) printf "  ${CI}%d${RST}  ${CM}Terminal font auto-config not supported — set manually${RST}\n" "$((_step++))" ;;
 esac
 
-printf "  ${CI}3${RST}  Install adaptive statusline\n"
+printf "  ${CI}%d${RST}  Install adaptive statusline\n" "$((_step++))"
 printf "     ${CM}└─ reads live colors from %s${RST}\n\n" "$_pl"
 
 # ── Step 1: prerequisites ──────────────────────────────────────────────────────
@@ -233,6 +240,23 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
       ;;
     *) printf "${CM}  Please install jq and JetBrainsMono Nerd Font manually.${RST}\n" ;;
   esac
+fi
+
+# ── Step 1b: Omarchy Nerd Font patch (omarchy only) ────────────────────────────
+if [[ "$DISTRO" == "omarchy" ]]; then
+  _confirm "$(printf "${CI}→${RST} Patch JetBrainsMono Nerd Font with the Omarchy logo? (y/N) ")"
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ ! -r /usr/share/fonts/omarchy/omarchy.ttf ]]; then
+      printf "${CM}  /usr/share/fonts/omarchy/omarchy.ttf not found — skipping (unexpected on Omarchy, is omarchy-settings installed?)${RST}\n"
+    else
+      sudo pacman -S --needed python-fonttools python-pillow
+      if sudo bash "$SCRIPT_DIR/nerdfont-patch/apply.sh"; then
+        printf "  ${CI}✓ Omarchy glyph patched into JetBrainsMono Nerd Font (U+FFF00)${RST}\n"
+      else
+        printf "  ${CM}✗ patch failed — see output above. JetBrainsMono Nerd Font left untouched.${RST}\n"
+      fi
+    fi
+  fi
 fi
 
 # ── Step 2: terminal font config ───────────────────────────────────────────────
