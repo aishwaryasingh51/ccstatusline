@@ -326,6 +326,8 @@ if [[ -n "$plan" ]]; then
 fi
 if [[ -n "$model" ]]; then
   line2+="${_sep}${C_IRIS}${model}${_RST}"
+  # Big Brain flag: jim-neon on/open creates it per Herdr terminal, off removes it
+  [[ -n "$HC_TERMINAL_ID" && -f "$HOME/.local/state/jim-neon/bigbrain.$HC_TERMINAL_ID" ]] && line2+=" ${C_IRIS}BigBrain${_RST}"
   [[ -n "$effort_label" ]] && line2+="${C_MUTED} · ${_RST}$(grad "$effort_pct")${effort_label}${_RST}"
 fi
 if [[ -n "$used" ]]; then
