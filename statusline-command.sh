@@ -277,10 +277,14 @@ grad_rem() {
 }
 
 # Format a token integer as compact kilo notation; result in $_FMTK
-# e.g. 16600->16.6k  200000->200k  940->940  (no subshell — hot path safe)
+# e.g. 16600->16.6k  200000->200k  1000000->1M  940->940  (no subshell — hot path safe)
 fmtk() {
   local n=$1 d
-  if (( n >= 1000 )); then
+  if (( n >= 1000000 )); then
+    d=$(( (n % 1000000) / 100000 ))
+    if (( d == 0 )); then printf -v _FMTK '%dM' $(( n / 1000000 ))
+    else printf -v _FMTK '%d.%dM' $(( n / 1000000 )) "$d"; fi
+  elif (( n >= 1000 )); then
     d=$(( (n % 1000) / 100 ))
     if (( d == 0 )); then printf -v _FMTK '%dk' $(( n / 1000 ))
     else printf -v _FMTK '%d.%dk' $(( n / 1000 )) "$d"; fi
@@ -291,7 +295,7 @@ fmtk() {
 effort_label=""; effort_pct=55
 case "$effort" in
   low)    effort_label="Low";    effort_pct=0   ;;
-  medium) effort_label="Medium"; effort_pct=33  ;;
+  medium) effort_label="Med"; effort_pct=33  ;;
   high)   effort_label="High";   effort_pct=55  ;;
   xhigh)  effort_label="Extra";  effort_pct=80  ;;
   max)    effort_label="Max";    effort_pct=100 ;;
