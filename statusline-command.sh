@@ -2,7 +2,7 @@
 input=$(cat)
 
 # Parse all input fields in one jq call (\x1f delimiter — see CLAUDE.md gotcha)
-IFS=$'\x1f' read -r cwd model used tok ctxmax week five five_reset effort < <(
+IFS=$'\x1f' read -r cwd model used tok ctxmax week five five_reset effort session_id < <(
   jq -r '[.workspace.current_dir // .cwd,
           .model.display_name // "",
           ((.context_window.used_percentage | numbers) // (if ((.context_window.context_window_size // 0) > 0 and ((.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)) > 0) then (((.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)) * 100 / .context_window.context_window_size | round) else null end) | numbers | tostring) // "",
@@ -11,7 +11,8 @@ IFS=$'\x1f' read -r cwd model used tok ctxmax week five five_reset effort < <(
           (.rate_limits.seven_day.used_percentage | numbers | tostring) // "",
           (.rate_limits.five_hour.used_percentage | numbers | tostring) // "",
           (.rate_limits.five_hour.resets_at | numbers | tostring) // "",
-          (.effort.level // "")] | join("")' <<<"$input"
+          (.effort.level // ""),
+          (.session_id // "")] | join("")' <<<"$input"
 )
 home="$HOME"
 
@@ -322,11 +323,15 @@ if [[ -n "$_git_branch" ]]; then
 fi
 # Big Brain flag (jim-neon on/open creates it per Herdr terminal, off removes it):
 # "BigBrain" replaces the plan label, with a shimmer — a lighter band stepping
-# 1 letter per ~300 ms, driven by the clock (builtins only, no timer).
+# 1 letter per ~300 ms, driven by the clock (builtins only, no timer). Only while the
+# turn is busy (busy.<session_id>, made by jim-bigbrain-busy hooks, <10 min old); idle = plain.
 if [[ -n "$HC_TERMINAL_ID" && -f "$HOME/.local/state/jim-neon/bigbrain.$HC_TERMINAL_ID" ]]; then
   _s=BigBrain _base=$C_ROSE _re='38;2;([0-9]+);([0-9]+);([0-9]+)m$'
+  _busy=0 _bf="$HOME/.local/state/jim-neon/busy.$session_id"
+  if [[ -n "$session_id" && -f $_bf ]]; then read -r _bt < "$_bf"; (( EPOCHSECONDS - ${_bt:-0} < 600 )) && _busy=1; fi
   _t=${EPOCHREALTIME/./}; _p=$(( _t / 300000 % 12 - 2 )); _bb=
-  if [[ $_base =~ $_re ]]; then
+  if (( ! _busy )); then _bb="${_base}$_s"
+  elif [[ $_base =~ $_re ]]; then
     _rgb=("${BASH_REMATCH[@]:1}")
     for _k in 0 1 2 3 4 5 6 7; do
       _d=$(( _k > _p ? _k - _p : _p - _k )); _w=0; (( _d == 0 )) && _w=60; (( _d == 1 )) && _w=30
