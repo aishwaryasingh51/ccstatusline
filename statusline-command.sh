@@ -327,7 +327,27 @@ fi
 if [[ -n "$model" ]]; then
   line2+="${_sep}${C_IRIS}${model}${_RST}"
   # Big Brain flag: jim-neon on/open creates it per Herdr terminal, off removes it
-  [[ -n "$HC_TERMINAL_ID" && -f "$HOME/.local/state/jim-neon/bigbrain.$HC_TERMINAL_ID" ]] && line2+=" ${C_IRIS}BigBrain${_RST}"
+  if [[ -n "$HC_TERMINAL_ID" && -f "$HOME/.local/state/jim-neon/bigbrain.$HC_TERMINAL_ID" ]]; then
+    # shimmer: a lighter band steps 1 letter per ~300 ms, driven by the clock (builtins only)
+    _s=BigBrain _bb=$_s _re='38;2;([0-9]+);([0-9]+);([0-9]+)m$'
+    if [[ $C_IRIS =~ $_re ]]; then
+      _rgb=("${BASH_REMATCH[@]:1}"); _t=${EPOCHREALTIME/./}; _p=$(( _t / 300000 % 12 - 2 )); _bb=
+      for _k in 0 1 2 3 4 5 6 7; do
+        _d=$(( _k > _p ? _k - _p : _p - _k )); _w=0; (( _d == 0 )) && _w=60; (( _d == 1 )) && _w=30
+        printf -v _c '\033[38;2;%d;%d;%dm' $(( _rgb[0] + (255 - _rgb[0]) * _w / 100 )) \
+          $(( _rgb[1] + (255 - _rgb[1]) * _w / 100 )) $(( _rgb[2] + (255 - _rgb[2]) * _w / 100 ))
+        _bb+="$_c${_s:_k:1}"
+      done
+    else   # palette colours (no RGB known): band = bold, centre = white
+      _t=${EPOCHREALTIME/./}; _p=$(( _t / 300000 % 12 - 2 )); _bb=
+      for _k in 0 1 2 3 4 5 6 7; do
+        _d=$(( _k > _p ? _k - _p : _p - _k )); _c=$C_IRIS
+        (( _d == 1 )) && _c="${C_IRIS}\033[1m"; (( _d == 0 )) && _c="\033[1;97m"
+        _bb+="$_c${_s:_k:1}\033[0m"
+      done
+    fi
+    line2+=" ${C_IRIS}${_bb}${_RST}"
+  fi
   [[ -n "$effort_label" ]] && line2+="${C_MUTED} · ${_RST}$(grad "$effort_pct")${effort_label}${_RST}"
 fi
 if [[ -n "$used" ]]; then
